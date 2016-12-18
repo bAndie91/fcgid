@@ -1,0 +1,6 @@
++/var/www/cgi-bin PHP
++/usr/lib/cgi-bin
++/srv/web PHP,HHVM
++/home/*/htdocs T2T
++/ T2T
+-/

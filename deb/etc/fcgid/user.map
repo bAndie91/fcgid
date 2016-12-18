@@ -1,0 +1,11 @@
+# run root-owned scripts as nobody
+root		nobody
+
+# run john's scripts as the user itself
+john		*
+
+# run scripts owned by members of cgirunner group as the user itself
+%cgirunner	*
+
+# do not run any other scripts
+*		-

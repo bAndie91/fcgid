@@ -1,0 +1,39 @@
+fcgid (1.3.5) unstable; urgency=low
+
+  * use FCGI_INDEX_SEARCH env when operating on a folder
+  * fix SCRIPT_FILENAME env when operating on a folder
+
+ -- Andreas Hrubak <andreas@uucp.hu>  Thu, 25 Aug 2016 16:37:34 +0200
+
+fcgid (1.3.3) unstable; urgency=low
+
+  * new parameter: FCGI_INDEX_SEARCH
+  * do not expose DOCUMENT_ROOT
+
+ -- Andreas Hrubak <andreas@uucp.hu>  Wed, 24 Aug 2016 13:20:36 +0200
+
+fcgid (1.3.1) unstable; urgency=low
+
+  * new syntax: flags in handler.ext
+  * paths.acl now supports wildcards
+
+fcgid (1.2.9) unstable; urgency=low
+
+  * New config handler.ext defines which file type should run with which 
+    command
+  * If file type handler (extension handler) is defined for a script, it is 
+    not required to be executable
+  * In paths.acl you can define which script types can be run within a path
+  * You can map groups in user.map config file
+
+fcgid (1.2.5) unstable; urgency=low
+
+  * Remove dependancy to sudo
+
+fcgid (1.2.0) unstable; urgency=low
+
+  * Change process name 2nd word: master, idle, worker
+  * Append SCRIPT_FILENAME to process name in worker phase
+  * New config file 'paths.acl' lists directories where CGI running is
+    permitted (eg. "+/var/www/cgi-bin"), or denied (eg. "-/usr"). Default
+    is to deny executing if none of the script's parents are listed.

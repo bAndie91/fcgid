@@ -1,0 +1,4 @@
+/etc/fcgid/user.map
+/etc/fcgid/paths.acl
+/etc/fcgid/handler.ext
+/etc/default/fcgid

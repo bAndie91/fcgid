@@ -1,0 +1,54 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          fcgid
+# Required-Start:
+# Required-Stop:
+# X-Start-Before:    nginx httpd
+# X-Stop-After:      nginx httpd
+# X-Interactive:     false
+# Default-Start:     S 2
+# Default-Stop:      0 6
+# Short-Description:
+# Description:
+### END INIT INFO
+
+set -e
+
+NAME=fcgid
+DAEMON=$NAME
+OPTIONS=
+
+
+if ! which "$DAEMON" >/dev/null; then
+	exit 0
+fi
+
+
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+
+
+case "$1" in
+start)
+	$DAEMON $OPTIONS
+	;;
+stop)
+	$DAEMON stop
+	;;
+restart)
+	$DAEMON stop || true
+	$DAEMON $OPTIONS
+	;;
+reload)
+	# SIGHUP master and worker processes
+	pkill -SIGHUP -e "$NAME"
+	;;
+status)
+	$DAEMON status
+	;;
+*)
+	echo "Usage: $0 {start|stop|restart|reload|status}"
+	exit 1
+	;;
+esac
+

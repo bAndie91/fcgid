@@ -1,0 +1,18 @@
+
+# Start options:
+#  -S, --socket <socket>      unix doman socket daemon listens on (/var/run/fcgid.sock)
+#  -u, --user <user>          socket file's owner (www-data)
+#  -g, --group <group>        socket file's owner group, default is owner's primary group
+#  -m, --mode <mode>          socket file's mode (0600)
+#  -P, --pidfile <pidfile>    default: /var/run/fcgid.pid
+#  -v, --verbose              debug mode
+#  --usermap <file>           mapping file-owner to executing user (/etc/fcgid/user.map)
+#  --paths <file>             path-based access control (/etc/fcgid/paths.acl)
+#  --exthandlers <file>       predefined file handlers (/etc/fcgid/handler.ext)
+#  -F, --facility <name>      syslog(3) facility name (daemon)
+#  -n, --preforks <number>    number of listener processes should run at least (5)
+#  -i, --idlers <number>      number of idle listener processes at least (1)
+#  -x, --max <number>         number of listener processes can run at most (10)
+
+OPTIONS=
+

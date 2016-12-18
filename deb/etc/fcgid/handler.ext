@@ -1,0 +1,14 @@
+# field 1: handler id
+# field 2: regexp matches to file name
+# field 3: flags
+#   h    command outputs http headers
+#   x    script must be executable
+#   -    placeholder
+# rest: command and arguments separated by spaces
+
+PHP		\.ph(p|tml?)\d?$	hx	/usr/bin/env php-cgi
+HHVM	\.hh(vm?)?$			hx	/usr/bin/env hhvm
+T2T		\.t2?t$				-	/usr/bin/txt2tags -t html -o - -i
+
+# flags for other cgi interpreters:
+hx

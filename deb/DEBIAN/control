@@ -1,0 +1,12 @@
+Package: fcgid
+Priority: optional
+Section: httpd
+Installed-Size: 128
+Maintainer: Andras Hrubak <andreas@uucp.hu>
+Architecture: all
+Version: 1.3.5
+Depends: perl, bsdutils, libprocess-initgroups-perl
+Recommends: 
+Provides: fastcgi
+Source: 
+Description: Fast CGI suid runner.

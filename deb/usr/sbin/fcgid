@@ -1,0 +1,167 @@
+#!/usr/bin/env perl
+
+use FCGI;
+use IO::Handle;
+use Data::Dumper;
+use Sys::Syslog qw/:standard :macros/;
+use Getopt::Long;
+use POSIX qw/setsid/;
+use lib "/usr/lib/fcgid";
+require "subroutines.pl";
+require "request.pl";
+require "signals.pl";
+
+
+$sock_file = "/var/run/fcgid.sock";
+$sock_user = "www-data";
+$sock_mode = 0600;
+$pid_file = "/var/run/fcgid.pid";
+$debug_mode = 0;
+$file_usermap = "/etc/fcgid/user.map";
+$file_paths = "/etc/fcgid/paths.acl";
+$file_exthandlers = "/etc/fcgid/handler.ext";
+$syslog_facility = "daemon";
+$preforks = 5;
+$min_idlers = 1;
+$max_children = 10;
+
+
+$selfname = "fcgid";
+$0 = "$selfname master";
+$|++;
+select STDERR;
+$|++;
+select STDOUT;
+$CRLF = "\r\n";
+$haveToEnded = 0;
+
+
+
+Getopt::Long::Configure(qw/no_ignore_case/);
+GetOptions(
+    'S|socket=s'	=> \$sock_file,
+    'u|user=s'		=> \$sock_user,
+    'g|group=s'		=> \$sock_group,
+    'm|mode=s'		=> \$sock_mode,
+    'P|pidfile=s'	=> \$pid_file,
+    'v|verbose'		=> \$debug_mode,
+    'usermap=s'		=> \$file_usermap,
+    'paths=s'		=> \$file_paths,
+    'exthandlers=s'	=> \$file_exthandlers,
+    'F|facility=s'	=> \$syslog_facility,
+    'n|preforks=i'	=> \$preforks,
+    'i|idlers=i'	=> \$min_idlers,
+    'x|max=i'		=> \$max_children,
+) or
+die "Usage: $0 [start options | \"stop\" | \"status\"]
+  -S, --socket <socket>      unix doman socket daemon listens on ($sock_file)
+  -u, --user <user>          socket file's owner ($sock_user)
+  -g, --group <group>        socket file's owner group, default is owner's primary group
+  -m, --mode <mode>          socket file's mode (".sprintf("%04o", $sock_mode).")
+  -P, --pidfile <pidfile>    default: $pid_file
+  -v, --verbose              debug mode
+  --usermap <file>           mapping file-owner to executing user ($file_usermap)
+  --paths <file>             path-based access control ($file_paths)
+  --exthandlers <file>       predefined file handlers ($file_exthandlers)
+  -F, --facility <name>      syslog(3) facility name ($syslog_facility)
+  -n, --preforks <number>    number of listener processes should run at least ($preforks)
+  -i, --idlers <number>      number of idle listener processes at least ($min_idlers)
+  -x, --max <number>         number of listener processes can run at most ($max_children)
+";
+
+
+require "daemon_ctrl.pl";
+
+
+# Fcgi Daemon starts
+
+openlog("fcgid", $debug_mode ? 'pid,perror' : 'pid', logfacnam($syslog_facility));
+loadOwnerMap();
+loadPaths();
+loadExtHandlers();
+
+
+# Setup Unix socket
+$sock_main = FCGI::OpenSocket($sock_file, 2);
+
+@sock_pwnam = getpwnam $sock_user;
+$sock_uid = $sock_pwnam[2];
+if(defined $sock_group) {
+	@sock_grnam = getgrnam $sock_group;
+	$sock_gid = $sock_grnam[2];
+}
+else {
+	$sock_gid = $sock_pwnam[3];
+}
+
+chown $sock_uid, $sock_gid, $sock_file or die "$!\n";
+chmod $sock_mode, $sock_file or die "$!\n";
+
+
+
+# Fork to background
+if(!$debug_mode) {
+	$fork = fork;
+	if(not defined $fork)
+	{
+		die "fork: $!\n";
+	}
+	elsif($fork > 0)
+	{
+		open $pid_fh, '>', $pid_file;
+		print $pid_fh $fork;
+		close $pid_fh;
+		print STDERR "Forked to background PID $fork.\n";
+		exit 0;
+	}
+	chdir "/";
+	setsid();
+}
+
+
+
+# Listen
+
+while(1) {
+	$children = scalar keys %Child;
+	$workers = get_worker_children_number(keys %Child);
+	$idlers = $children - $workers;
+	print STDERR "Children: $workers/$children\n" if $debug_mode;	
+	
+	if($children < $preforks or ($idlers < $min_idlers and $children < $max_children))
+	{
+		$fork = fork;
+		if(!defined $fork) {
+			syslog(LOG_ERR, "fork: $!");
+		}
+		elsif($fork == 0) {
+			%Child = ();
+			$0 = "$selfname idle";
+			$fcgi_in = IO::Handle->new();
+			$fcgi_out = IO::Handle->new();
+			$fcgi_err = IO::Handle->new();
+			
+			$fcgi_request = FCGI::Request($fcgi_in, $fcgi_out, $fcgi_err, \%fcgi_env, $sock_main);
+			if($fcgi_request->Accept() >= 0) {
+				$0 = "$selfname worker";
+				kill 'CHLD', getppid;
+				handle_request($fcgi_request);
+				$fcgi_request->Finish();
+				$0 = "$selfname idle";
+			}
+			exit;
+		}
+		else {
+			$Child{$fork} = 1;
+			print STDERR "Forked: $fork\n" if $debug_mode;
+		}
+	}
+	else {
+		sleep 3600;
+		last if $haveToEnded;
+		next;
+	}
+}
+
+real_exit();
+

@@ -1,0 +1,84 @@
+SETUP FOR NGINX
+
+  CONFIGURE FCGID
+  
+  Enable executing php, phtml, php3, etc. files with php-cgi
+  interpreter.  Last line contains only flags affects all other file
+  types. Flag 'x' instructs fcgid to run only files executable bit set
+  on, so in this config, php files are not neccessary to be executable.
+  Flag 'h' means the process outputs HTTP headers, so fcgid will not
+  generate headers on her own. You can define more script types by
+  pattern-matching to their name. Fcgid is ready to run any executable
+  file it found. To deny running anything, specify certain type next to
+  paths in paths.acl, see next step.
+  
+  /etc/fcgid/handler.ext:
+  PHP  \.ph(p|tml?)\d?$  h  /usr/bin/env php-cgi
+  hx
+  
+  Setup paths within cgi running is allowed. Allow running PHP type
+  files within /var/www/cgi-bin, and nothing from anywhere else.
+  
+  /etc/fcgid/paths.acl:
+  +/var/www/cgi-bin PHP
+  +/var/www/*/cgi-bin PHP
+  -/
+  
+  Setup running user. Fcgid maps owner of CGI file to a system user, CGI
+  file will be run in name of that user. Files owned by root will be run
+  by nobody, www-data maps to itself, other files will not be run.
+  
+  /etc/fcgid/user.map:
+  root nobody
+  www-data *
+  * -
+
+
+  START DAEMON
+  
+  Listening on /var/run/fcgid.sock, owned by nginx, logging into local3
+  facility, number of processes are tuned.
+  
+  # fcgid --user nginx --facility local3 --preforks 5 --idlers 2 --max 42
+  
+  
+  CONFIGURE NGINX
+
+  Configure FastCGI backend address and parameters in Nginx.
+  
+  location /cgi-bin
+  {
+    fastcgi_pass unix:/var/run/fcgid.sock;
+    
+    fastcgi_index index.cgi;
+    fastcgi_pass_request_headers on;
+    fastcgi_intercept_errors on;
+    fastcgi_ignore_client_abort off;
+    fastcgi_buffers 16 16k;
+    fastcgi_buffer_size 32k;
+    
+    fastcgi_param QUERY_STRING $query_string;
+    fastcgi_param REQUEST_METHOD $request_method;
+    fastcgi_param CONTENT_TYPE $content_type;
+    fastcgi_param CONTENT_LENGTH $content_length;
+    
+    fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_param REQUEST_URI $request_uri;
+    fastcgi_param REQUEST_FILENAME $request_filename;
+    fastcgi_param DOCUMENT_URI $document_uri;
+    fastcgi_param DOCUMENT_ROOT $document_root;
+    fastcgi_param REQUEST_SCHEME $scheme;
+    
+    fastcgi_param GATEWAY_INTERFACE CGI/1.1;
+    fastcgi_param SERVER_PROTOCOL $server_protocol;
+    fastcgi_param SERVER_SOFTWARE nginx/$nginx_version;
+    
+    fastcgi_param REMOTE_ADDR $remote_addr;
+    fastcgi_param REMOTE_PORT $remote_port;
+    fastcgi_param SERVER_ADDR $server_addr;
+    fastcgi_param SERVER_PORT $server_port;
+    fastcgi_param SERVER_NAME $server_name;
+    fastcgi_param HTTPS $https if_not_empty;
+    fastcgi_param HOST $host;
+  }
