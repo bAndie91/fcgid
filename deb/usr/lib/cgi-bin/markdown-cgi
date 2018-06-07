@@ -1,0 +1,6 @@
+#!/bin/sh
+
+/bin/echo -ne "Content-Type: text/html\r\n"
+/bin/echo -ne "\r\n"
+
+exec markdown "$@"
