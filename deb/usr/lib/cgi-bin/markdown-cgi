@@ -1,6 +1,14 @@
-#!/bin/sh
+#!/usr/bin/env perl
 
-/bin/echo -ne "Content-Type: text/html\r\n"
-/bin/echo -ne "\r\n"
+use Text::Markdown;
+use Linux::UserXAttr ':all';
 
-exec markdown "$@"
+my $file1 = $ARGV[0];
+my $charset1 = lgetxattr($file1, 'user.charset') || 'UTF-8';
+
+
+print "Content-Type: text/html; charset=$charset1\r\n";
+print "\r\n";
+
+$/ = undef;
+print Text::Markdown::Markdown(<>);
